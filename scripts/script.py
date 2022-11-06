@@ -6,19 +6,10 @@ def read_image(path):
 
     return img
 
-def resize_image(img):
-    print('Original Dimensions : ',img.shape)
-    
-    scale_percent = 50 # percent of original size
-    width = int(img.shape[1] * scale_percent / 100)
-    height = int(img.shape[0] * scale_percent / 100)
-    dim = (width, height)
-    
-    # resize image
-    resized = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
-    
-    print('Resized Dimensions : ',resized.shape)
-        
+def resize_image(img, scale=0.5):    
+    width = int(img.shape[1] * scale)
+    height = int(img.shape[0] * scale)
+    resized = cv2.resize(img, (width, height), interpolation = cv2.INTER_AREA)
     return resized
 
 
@@ -44,21 +35,52 @@ def invert_image(img):
 
     return inverted_img
 
-img = read_image("datasets/shadow_and_crease/10.jpeg")
-# img = read_image("datasets/shadow/1.jpeg")
-# img = resize_image(img)
-original_image = img
+# Declare constants
+DILATE_KERNEL_SIZE = 21
+IMAGE_SCALE = 0.5
+ROOT_DIR = 'datasets'
+EXTENSION = 'jpeg'
 
-img = dilate_image(img, kernel_size=8)
-img = blur_image(img)
-img = subtract_images(img, original_image)
-img = invert_image(img)
+GLARE = "glare"
+CREASE = "crease"
+SHADOW = "shadow"
+SHADOW_CREASE = 'shadow_and_crease'
 
-before_and_after_img = np.hstack((original_image, img))
-cv2.imshow('Image size {img.shape}', before_and_after_img)
+# Change for varying inputs
+NOISE_TYPE = SHADOW
+
+# for image_number in range(1,11):
+for image_number in range(1,11):
+    # if image_number!=10: continue
+    filename = f"{ROOT_DIR}/{NOISE_TYPE}/{image_number}.{EXTENSION}"
+
+    img = read_image(filename)
+    original_image = img
+
+    img = dilate_image(img, kernel_size=DILATE_KERNEL_SIZE)
+    # img = blur_image(img)
+    img = subtract_images(img, original_image)
+    img = invert_image(img)
+
+    ret, binary_img = cv2.threshold(img,170,255, cv2.THRESH_BINARY) 
+    ret, otsu_img = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU) # 2nd param doesnt matter
+    # adapt_img = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,101,40)
+    adapt_img = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY,101,40)
+
+    # Resize for viewport
+    original_image = resize_image(original_image, scale=IMAGE_SCALE)
+    img = resize_image(img, scale=IMAGE_SCALE)
+    binary_img = resize_image(binary_img, scale=IMAGE_SCALE)
+    adapt_img = resize_image(adapt_img, scale=IMAGE_SCALE)
+    otsu_img = resize_image(otsu_img, scale=IMAGE_SCALE)
+
+    before_and_after_img = np.hstack((original_image, binary_img, adapt_img, otsu_img))
+    cv2.imshow(f'Image size {filename}', before_and_after_img)
+
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
 # from plotly import express as px
 # px.imshow(dilated_img)
+
