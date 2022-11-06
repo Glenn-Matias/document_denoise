@@ -37,9 +37,26 @@ def invert_image(img):
     return inverted_img
 
 def add_text_to_image(img, text):
-    img = cv2.putText(img, text, (20,100), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 3, cv2.LINE_AA)
+    img = cv2.putText(img, text, (100,100), cv2.FONT_HERSHEY_SIMPLEX, 4, (0, 0, 255), 3, cv2.LINE_AA)
     return img
 
+def save_image(img, folder, filename):
+
+    from pathlib import Path
+
+
+    # img = add_text_to_image(img, filename)
+
+    # img = cv2.resize(img, (600, 800))
+    prefix = "output"
+    dir = f"{prefix}/{folder}"
+    filename = f"{dir}/{filename}.jpg"
+
+    Path(dir).mkdir(parents=True, exist_ok=True)
+
+    status = cv2.imwrite(filename, img)
+
+    print(f'Saving to {filename}: {status}')
 
 # Declare constants
 DILATE_KERNEL_SIZE = 21
@@ -53,11 +70,11 @@ SHADOW = "shadow"
 SHADOW_CREASE = 'shadow_and_crease'
 
 # Change for varying inputs
-NOISE_TYPE = SHADOW
+NOISE_TYPE = CREASE
 
 # for image_number in range(1,11):
 for image_number in range(1,11):
-    if image_number!=10: continue
+    if image_number!=8: continue
     filename = f"{ROOT_DIR}/{NOISE_TYPE}/{image_number}.{EXTENSION}"
 
     img, width, height = read_image(filename)
@@ -70,10 +87,20 @@ for image_number in range(1,11):
 
     img = inverted_img
 
+
     ret, binary_img = cv2.threshold(img,170,255, cv2.THRESH_BINARY) 
     ret, otsu_img = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU) # 2nd param doesnt matter
     # adapt_img = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,101,40)
     adapt_img = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY,101,40)
+
+
+    save_image(dilated_img, f"{NOISE_TYPE}/{image_number}", "dilated")
+    save_image(blurred_img, f"{NOISE_TYPE}/{image_number}", "blurred")
+    save_image(subtracted_img, f"{NOISE_TYPE}/{image_number}", "subtracted")
+    save_image(inverted_img, f"{NOISE_TYPE}/{image_number}", "inverted")
+    save_image(binary_img, f"{NOISE_TYPE}/{image_number}", "binary")
+    save_image(otsu_img, f"{NOISE_TYPE}/{image_number}", "otsu")
+    save_image(adapt_img, f"{NOISE_TYPE}/{image_number}", "adapt")
 
     # Resize for viewport
     original_image, scaled_width, scaled_height = resize_image(original_image, scale=IMAGE_SCALE)
@@ -106,6 +133,7 @@ for image_number in range(1,11):
     before_and_after_img = np.hstack((original_image, binary_img, adapt_img, otsu_img))
     cv2.imshow(f'After Thresholding {filename}', before_and_after_img)
 
+    
 
 
 cv2.waitKey(0)
