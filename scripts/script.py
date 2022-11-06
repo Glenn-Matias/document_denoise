@@ -47,25 +47,32 @@ SHADOW = "shadow"
 SHADOW_CREASE = 'shadow_and_crease'
 
 # Change for varying inputs
-NOISE_TYPE = SHADOW
+NOISE_TYPE = SHADOW_CREASE
 
 # for image_number in range(1,11):
 for image_number in range(1,11):
     # if image_number!=10: continue
-    filename = f"{ROOT_DIR}/{NOISE_TYPE}/{image_number}.{EXTENSION}"
+    filename = f"D:\Documents\DLSU\Year 4 Term 1\CV\document_denoise\{ROOT_DIR}\{NOISE_TYPE}\{image_number}.{EXTENSION}"
 
     img = read_image(filename)
     original_image = img
+    # cv2.imshow("image", img)
 
     img = dilate_image(img, kernel_size=DILATE_KERNEL_SIZE)
+    # cv2.imshow("image", img)
     # img = blur_image(img)
     img = subtract_images(img, original_image)
+    # cv2.imshow("image", img)
     img = invert_image(img)
+    # cv2.imshow("image", img)
 
     ret, binary_img = cv2.threshold(img,170,255, cv2.THRESH_BINARY) 
+    cv2.imshow("image", binary_img)
     ret, otsu_img = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU) # 2nd param doesnt matter
+    # cv2.imshow("image", otsu_img)
     # adapt_img = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,101,40)
     adapt_img = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY,101,40)
+    # cv2.imshow("image", adapt_img)
 
     # Resize for viewport
     original_image = resize_image(original_image, scale=IMAGE_SCALE)
@@ -75,7 +82,7 @@ for image_number in range(1,11):
     otsu_img = resize_image(otsu_img, scale=IMAGE_SCALE)
 
     before_and_after_img = np.hstack((original_image, binary_img, adapt_img, otsu_img))
-    cv2.imshow(f'Image size {filename}', before_and_after_img)
+    # cv2.imshow(f'Image size {filename}', before_and_after_img)
 
 
 cv2.waitKey(0)
