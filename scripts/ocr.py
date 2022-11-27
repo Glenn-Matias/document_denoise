@@ -26,6 +26,8 @@ NOISE_TYPE = CREASE
 
 prefix = "output"
 output_folder = f"{prefix}/ocr_preprocess"
+corpus_name = "corpus.csv"
+diffs_name = "diffs.csv"
     
 def do_ocr(img):
     return pytesseract.image_to_string(img)
@@ -34,10 +36,10 @@ def create_output_folder(dir):
     Path(dir).mkdir(parents=True, exist_ok=True)
 
 
-def create_preprocessed_ocr():
+def create_preprocessed_corpus():
 
     create_output_folder(output_folder)
-    df = pd.DataFrame(columns=['number', 'target', 'crease', 'shadow', 'shadow_crease'])
+    df = pd.DataFrame(columns=['number', TARGET, CREASE, SHADOW, SHADOW_CREASE])
 
 
     for image_number in range(1,11):
@@ -55,24 +57,52 @@ def create_preprocessed_ocr():
         df.loc[image_number] = row
 
     print(df)
-    df.to_csv(f"{output_folder}/all.csv")
+    df.to_csv(f"{output_folder}/{corpus_name}")
 
-# create_preprocessed_ocr()
+def create_preprocessed_diffs():
+    corpus = pd.read_csv(f"{output_folder}/{corpus_name}")
+    stats_df = pd.DataFrame(columns=['number', 'target_characters', 'crease_absolute_diff', 'shadow_absolute_diff', 'shadow_crease_absolute_diff'])
 
-df = pd.read_csv(f"{output_folder}/all.csv")
+    for index, row in corpus.iterrows():
+        print(f"Getting diffs @ {index}")
+        target = row[TARGET]
+        shadow = row[SHADOW]
+        crease = row[CREASE]
+        shadow_crease = row[SHADOW_CREASE]
+        new_row = pd.DataFrame({'number': index+1,
+                                'target_characters': len(row[TARGET]),
+                                'crease_absolute_diff': edit_distance(target, crease),
+                                'shadow_absolute_diff': edit_distance(target, shadow),
+                                'shadow_crease_absolute_diff': edit_distance(target, shadow_crease)
+                                }, index=[0])
+        stats_df = stats_df.append(new_row, ignore_index=True)
 
 
-for index, row in df.iterrows():
-    # print(row['target'], row['shadow'])
-    first_text = row['target']
-    second_text = row['shadow']
-
-    
-    print(edit_distance(first_text, first_text))
-    break
+    stats_df.to_csv(f"{output_folder}/{diffs_name}")
+    print(stats_df)
 
 
+def compute_preprocessed_relative_diffs():
+    diffs = pd.read_csv(f"{output_folder}/{diffs_name}")
+    stats_df = pd.DataFrame(columns=['number', 'crease_percentage_diff', 'shadow_percentage_diff', 'shadow_crease_percentage_diff'])
 
+    for index, row in diffs.iterrows():
+        print(f"Getting diffs @ {index}")
 
+        target = int(row["target_characters"])
+        shadow_perc = (int(row["crease_absolute_diff"]) / target) * 100
+        crease_perc = (int(row["shadow_absolute_diff"]) / target) * 100
+        shadow_crease_perc = (int(row["shadow_crease_absolute_diff"]) / target) * 100
 
+        new_row = pd.DataFrame({'number': index+1,
+                                        'crease_percentage_diff': shadow_perc,
+                                        'shadow_percentage_diff': crease_perc,
+                                        'shadow_crease_percentage_diff': shadow_crease_perc
+                                        }, index=[0])
+        stats_df = stats_df.append(new_row, ignore_index=True)
 
+    print(stats_df)
+
+# create_preprocessed_corpus()
+# create_preprocessed_diffs()
+compute_preprocessed_relative_diffs()

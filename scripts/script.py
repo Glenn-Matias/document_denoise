@@ -62,7 +62,7 @@ def save_image(img, folder, filename):
 
 # Declare constants
 DILATE_KERNEL_SIZE = 21
-IMAGE_SCALE = 0.5
+IMAGE_SCALE = 1.0
 ROOT_DIR = 'datasets'
 EXTENSION = 'jpeg'
 
@@ -74,72 +74,72 @@ SHADOW_CREASE = 'shadow_and_crease'
 # Change for varying inputs
 NOISE_TYPE = CREASE
 
-# for image_number in range(1,11):
-for image_number in range(1,11):
-    if image_number!=1: continue
-    filename = f"{ROOT_DIR}/{NOISE_TYPE}/{image_number}.{EXTENSION}"
+for noise_type in [CREASE, SHADOW, SHADOW_CREASE]:
+    for image_number in range(1,11):
+        # if image_number!=1: continue
+        filename = f"{ROOT_DIR}/{noise_type}/{image_number}.{EXTENSION}"
 
-    img, width, height = read_image(filename)
-    original_image = img
+        img, width, height = read_image(filename)
+        original_image = img
 
-    dilated_img = dilate_image(img, kernel_size=DILATE_KERNEL_SIZE)
-    blurred_img = blur_image(dilated_img)
-    subtracted_img = subtract_images(blurred_img, original_image)
-    inverted_img = invert_image(subtracted_img)
+        dilated_img = dilate_image(img, kernel_size=DILATE_KERNEL_SIZE)
+        blurred_img = blur_image(dilated_img)
+        subtracted_img = subtract_images(blurred_img, original_image)
+        inverted_img = invert_image(subtracted_img)
 
-    img = inverted_img
-
-
-    ret, binary_img = cv2.threshold(img,170,255, cv2.THRESH_BINARY) 
-    ret, otsu_img = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU) # 2nd param doesnt matter
-    # adapt_img = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,101,40)
-    adapt_img = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY,101,40)
+        img = inverted_img
 
 
-    save_image(dilated_img, f"{NOISE_TYPE}/{image_number}", "dilated")
-    save_image(blurred_img, f"{NOISE_TYPE}/{image_number}", "blurred")
-    save_image(subtracted_img, f"{NOISE_TYPE}/{image_number}", "subtracted")
-    save_image(inverted_img, f"{NOISE_TYPE}/{image_number}", "inverted")
-    save_image(binary_img, f"{NOISE_TYPE}/{image_number}", "binary")
-    save_image(otsu_img, f"{NOISE_TYPE}/{image_number}", "otsu")
-    save_image(adapt_img, f"{NOISE_TYPE}/{image_number}", "adapt")
-
-    # Resize for viewport
-    original_image, scaled_width, scaled_height = resize_image(original_image, scale=IMAGE_SCALE)
-    original_image = add_text_to_image(original_image, "Original")
-
-    dilated_img, _, _ = resize_image(dilated_img, scale=IMAGE_SCALE)
-    dilated_img = add_text_to_image(dilated_img, "Dilated")
-
-    blurred_img, _, _ = resize_image(blurred_img, scale=IMAGE_SCALE)
-    blurred_img = add_text_to_image(blurred_img, "Blurred")
-
-    subtracted_img, _, _ = resize_image(subtracted_img, scale=IMAGE_SCALE)
-    subtracted_img = add_text_to_image(subtracted_img, "Subtracted")
-
-    inverted_img, _, _ = resize_image(inverted_img, scale=IMAGE_SCALE)
-    inverted_img = add_text_to_image(inverted_img, "Inverted")
-
-    before_and_after_img = np.hstack((original_image, dilated_img, blurred_img, subtracted_img, inverted_img))
-    cv2.imshow(f'Steps before Thresholding {filename}', before_and_after_img)
-
-    binary_img, _, _ = resize_image(binary_img, scale=IMAGE_SCALE)
-    binary_img = add_text_to_image(binary_img, "Binary Threshold")
-
-    adapt_img, _, _ = resize_image(adapt_img, scale=IMAGE_SCALE)
-    adapt_img = add_text_to_image(adapt_img, "Adaptive Threshold")
-
-    otsu_img, _, _ = resize_image(otsu_img, scale=IMAGE_SCALE)
-    otsu_img = add_text_to_image(otsu_img, "Otsu's Threshold")
-
-    before_and_after_img = np.hstack((original_image, binary_img, adapt_img, otsu_img))
-    cv2.imshow(f'After Thresholding {filename}', before_and_after_img)
-
-    
+        ret, binary_img = cv2.threshold(img,170,255, cv2.THRESH_BINARY) 
+        ret, otsu_img = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU) # 2nd param doesnt matter
+        # adapt_img = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,101,40)
+        adapt_img = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY,101,40)
 
 
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+        save_image(dilated_img, f"{noise_type}/{image_number}", "dilated")
+        save_image(blurred_img, f"{noise_type}/{image_number}", "blurred")
+        save_image(subtracted_img, f"{noise_type}/{image_number}", "subtracted")
+        save_image(inverted_img, f"{noise_type}/{image_number}", "inverted")
+        save_image(binary_img, f"{noise_type}/{image_number}", "binary")
+        save_image(otsu_img, f"{noise_type}/{image_number}", "otsu")
+        save_image(adapt_img, f"{noise_type}/{image_number}", "adapt")
+
+        # Resize for viewport
+        original_image, scaled_width, scaled_height = resize_image(original_image, scale=IMAGE_SCALE)
+        original_image = add_text_to_image(original_image, "Original")
+
+        dilated_img, _, _ = resize_image(dilated_img, scale=IMAGE_SCALE)
+        dilated_img = add_text_to_image(dilated_img, "Dilated")
+
+        blurred_img, _, _ = resize_image(blurred_img, scale=IMAGE_SCALE)
+        blurred_img = add_text_to_image(blurred_img, "Blurred")
+
+        subtracted_img, _, _ = resize_image(subtracted_img, scale=IMAGE_SCALE)
+        subtracted_img = add_text_to_image(subtracted_img, "Subtracted")
+
+        inverted_img, _, _ = resize_image(inverted_img, scale=IMAGE_SCALE)
+        inverted_img = add_text_to_image(inverted_img, "Inverted")
+
+        before_and_after_img = np.hstack((original_image, dilated_img, blurred_img, subtracted_img, inverted_img))
+        cv2.imshow(f'Steps before Thresholding {filename}', before_and_after_img)
+
+        binary_img, _, _ = resize_image(binary_img, scale=IMAGE_SCALE)
+        binary_img = add_text_to_image(binary_img, "Binary Threshold")
+
+        adapt_img, _, _ = resize_image(adapt_img, scale=IMAGE_SCALE)
+        adapt_img = add_text_to_image(adapt_img, "Adaptive Threshold")
+
+        otsu_img, _, _ = resize_image(otsu_img, scale=IMAGE_SCALE)
+        otsu_img = add_text_to_image(otsu_img, "Otsu's Threshold")
+
+        before_and_after_img = np.hstack((original_image, binary_img, adapt_img, otsu_img))
+        cv2.imshow(f'After Thresholding {filename}', before_and_after_img)
+
+        
+
+
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
 
 # from plotly import express as px
 # px.imshow(dilated_img)
