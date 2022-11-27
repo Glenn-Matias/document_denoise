@@ -58,6 +58,8 @@ def save_image(img, folder, filename):
 
     print(f'Saving to {filename}: {status}')
 
+
+
 # Declare constants
 DILATE_KERNEL_SIZE = 21
 IMAGE_SCALE = 0.5
@@ -74,7 +76,7 @@ NOISE_TYPE = CREASE
 
 # for image_number in range(1,11):
 for image_number in range(1,11):
-    if image_number!=8: continue
+    if image_number!=1: continue
     filename = f"{ROOT_DIR}/{NOISE_TYPE}/{image_number}.{EXTENSION}"
 
     img, width, height = read_image(filename)
