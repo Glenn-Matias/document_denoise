@@ -15,6 +15,7 @@ def read_image(path):
 
 ROOT_DIR = 'datasets'
 EXTENSION = 'jpeg'
+OUTPUT_EXTENSION = 'jpg'
 
 TARGET = "target"
 CREASE = "crease"
@@ -28,7 +29,20 @@ prefix = "output"
 output_folder = f"{prefix}/ocr_preprocess"
 corpus_name = "corpus.csv"
 diffs_name = "diffs.csv"
-    
+percentages_name = "percentages.csv"
+merged_name = 'merged.csv'
+final_name = 'final.csv'
+
+transformations_name = "transformations.csv"
+DILATED = "inverted"
+BLURRED = "blurred"
+SUBTRACTED = 'subtracted'
+INVERTED = "inverted"
+
+BINARY = 'binary'
+ADAPT = 'adapt'
+OTSU = 'otsu'
+
 def do_ocr(img):
     return pytesseract.image_to_string(img)
 
@@ -101,8 +115,72 @@ def compute_preprocessed_relative_diffs():
                                         }, index=[0])
         stats_df = stats_df.append(new_row, ignore_index=True)
 
-    print(stats_df)
+    stats_df.to_csv(f"{output_folder}/{percentages_name}")
 
+
+def create_preprocessed_csv():
+    corpus = pd.read_csv(f"{output_folder}/{corpus_name}")
+    diffs_df = pd.read_csv(f"{output_folder}/{diffs_name}")
+    percentages_df = pd.read_csv(f"{output_folder}/{percentages_name}")
+    
+    df = pd.merge(diffs_df, percentages_df, on='number')
+    df = pd.merge(df, corpus[['number', 'target']], on='number')
+
+
+    df.to_csv(f"{output_folder}/{merged_name}")
+# One time things:
 # create_preprocessed_corpus()
 # create_preprocessed_diffs()
-compute_preprocessed_relative_diffs()
+# compute_preprocessed_relative_diffs()
+
+
+def create_postprocessed_corpus():
+    output_folder = f"{prefix}/ocr_postprocess"
+
+    transformations_list = [DILATED, BLURRED, SUBTRACTED, INVERTED, BINARY, ADAPT, OTSU]
+    df = pd.DataFrame(columns=['number'] + transformations_list)
+
+    for dataset_type in [CREASE, SHADOW, SHADOW_CREASE]:
+        for image_number in range(1,11):
+            row = [str(image_number)]
+            for transformation in transformations_list:
+                filename = f"output/{dataset_type}/{image_number}/{transformation}.{OUTPUT_EXTENSION}"
+                img, width, height = read_image(filename)
+                scanned_text = do_ocr(img)
+            
+                print(filename)
+
+                row += [scanned_text]
+
+            df.loc[image_number] = row
+        df.to_csv(f"{output_folder}/{dataset_type}_{transformations_name}")
+
+    # print(df)
+
+
+
+def create_postprocessed_diffs():
+    
+    for dataset_type in [CREASE, SHADOW, SHADOW_CREASE]:
+        if dataset_type != SHADOW_CREASE: continue
+        print(f"*********{dataset_type}")
+        merged_df = pd.read_csv(f"{output_folder}/{merged_name}")
+        corpus = pd.read_csv(f"output/ocr_postprocess/{dataset_type}_{transformations_name}")
+
+        df = pd.merge(merged_df, corpus, on='number')
+
+        
+        def func(target, transformed):
+            return edit_distance(target, transformed)
+
+        for transformation in [INVERTED, BINARY, ADAPT, OTSU]:
+            # df[f'{transformation}_absolute_dif'] = edit_distance(target, crease)
+            print(transformation)
+            df[f'{transformation}_absolute_dif'] = df.apply(lambda row : func(row['target'], row[transformation]), axis = 1)
+            df[f'{transformation}_percentage_dif'] = (df[f'{transformation}_absolute_dif'] / df['target_characters']) * 100
+
+        df = df.filter(regex=(".percentage_dif"))
+        df.to_csv(f"{prefix}/ocr_postprocess/{dataset_type}_{final_name}")
+
+create_postprocessed_diffs()
+# create_postprocessed_diffs()
